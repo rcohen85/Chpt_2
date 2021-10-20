@@ -70,9 +70,21 @@ for ia = 1:size(fileList,1)
         dailyEffortTS{q,1} = [dailyEffortTS{q,1};[fullDates,effortFrac]];
     end
     
+    % find days outside date range of interest
+    badDates = find(dailyTots(:,1)<dateStart | dailyTots(:,1)>dateEnd); 
+    
     for iCT = 1:size(spNameList,1)
         
-        thisCTpres = dailyTots(:,[1,iCT+1]); % get time series for this CT
+        thisCT = dailyTots(:,[1,iCT+1]); % get time series for this CT
+        thisCT(badDates,:) = []; % remove days outside date range of interest
+        [Lia Locb] = ismember(thisCT(:,1),fullDates); % find where these days fit into continuous TS
+        if any(Locb==0) % occasionally getting day bins outside of supposed deployment dates
+            Locb(Locb==0) = []; % don't count those bins
+        end
+        thisCTpres = fullDates;
+        thisCTpres(:,2) = NaN;
+        thisCTpres(Locb,2) = thisCT(Lia,2);
+        
         if ~isempty(siteErr{r,iCT}) % get classifier error rate for this CT at given thresholds
             thisCTerr = repmat(siteErr{r,iCT}(NumMatch,RLmatch),size(thisCTpres,1),1);
         else
@@ -87,15 +99,24 @@ for ia = 1:size(fileList,1)
     
 end
  % find repeated dates, for when a new deployment began before the previous 
- % one stopped recording; sum effort on repeated dates
+ % one stopped recording; sum presence and effort and average error on repeated dates
 for io = 1:size(dailyEffortTS,1)
     
     overlap = find(diff(dailyEffortTS{io,1}(:,1))==0); 
     if ~isempty(overlap)
         for ic = 1:size(overlap,1)
+            dailyPresTS{io,1}(overlap(ic),2) = dailyPresTS{io,1}(overlap(ic),2) + dailyPresTS{io,1}(overlap(ic)+1,2);
             dailyEffortTS{io,1}(overlap(ic),2) = dailyEffortTS{io,1}(overlap(ic),2) + dailyEffortTS{io,1}(overlap(ic)+1,2);
+            if ~isnan(dailyErrTS{io,1}(overlap(ic),1))|~isnan(dailyErrTS{io,1}(overlap(ic)+1,1))
+                dailyErrTS{io,1}(overlap(ic),2) = mean((dailyErrTS{io,1}(overlap(ic),1)*dailyEffortTS{io,1}(overlap(ic),2)),(dailyErrTS{io,1}(overlap(ic)+1,1)*dailyEffortTS{io,1}(overlap(ic)+1,2)),'omitnan');
+            end
         end
-        dailyEffortTS{io,1}(overlap(ic)+1,:) = []; % remove repeated dates
+        % remove repeated dates
+        dailyEffortTS{io,1}(overlap(ic)+1,:) = [];
+        for iCT = 1:size(dailyPresTS,2)
+            dailyPresTS{io,iCT}(overlap(ic)+1,:) = [];
+            dailyErrTS{io,iCT}(overlap(ic)+1,:) = [];
+        end
     end
     
 end
