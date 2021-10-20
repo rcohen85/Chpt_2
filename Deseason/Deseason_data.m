@@ -54,21 +54,23 @@ cvVec(missingDataRows) = NaN;
 
 %% Plot initial data
 figure(91);clf
-plot(dateVec, meanVec,'.'); 
+plot(dateVec, meanVec,'o'); 
 set(gcf,'units','inches','PaperPositionMode','auto','OuterPosition',[1 2 10 5])
 yMax91 = get(gca,'yLim');
 repY91 = repmat(yMax91(2),size(dateVec,1),1);
+hold on
 bar(dateVec(isnan(meanVec)),repY91(isnan(meanVec)),1,'FaceColor',[0.8,0.8,0.8],...
     'EdgeColor',[0.8,0.8,0.8])
-hold on
-plot(dateVec, meanVec,'.');
+% hold on
+% plot(dateVec, meanVec,'.');
 xlim([min(dateVec),max(dateVec)])
 datetick('x','mmm ''yy','keepLimits')
 xlabel('Date (month, year)','FontSize',12)
-ylabel('Mean','FontSize',12)
-simpleFName = strrep(strrep(outputFileName,'_','\_'),'.txt','');
-title(simpleFName,'FontSize',10)
+ylabel('% Daily Presence','FontSize',12)
+simpleFName = strrep(strrep(outputFileName,'_',' '),'.txt','');
+title(simpleFName,'FontSize',12)
 ylim([0,max(repY91)])
+hold off
 
 %% Call Theil-Sen to estimate slope of entire dataset
 dataMat = [dateVec,meanVec];
@@ -81,23 +83,24 @@ figure(91); hold on
 plot(dateVec,trend,'-r')
 hold off
 set(gca,'layer','top')
-legend({'Recording Gaps','Original Data', 'Trend 1: incl. season'})
+legend({'Original Data', 'No Effort','Trend 1: incl. season'})
 if savePlots
     disp('Saving plots')
     figName91 = fullfile(savePath,[outputFileName,'_orig_timeseries']);
     saveas(91,figName91,'fig')
-    print(91,'-dpng','-r600',[figName91,'.png'])
+    saveas(figure(91),figName91,'tiff');
+%     print(91,'-dpng','-r600',[figName91,'.png'])
 else
     disp('No plots saved.')
 end
 %% Make second plot with detrended timeseries
 figure(92);clf
-plot(dateVec,meanMinusTrend,'.')
+plot(dateVec,meanMinusTrend,'o')
 set(gcf,'units','inches','PaperPositionMode','auto','OuterPosition',[2 2 10 5])
 datetick('x','mmm ''yy','keepLimits')
 xlabel('Date (month, year)','FontSize',12)
-ylabel('Mean','FontSize',12)
-title(['Detrended Timeseries: ', simpleFName],'FontSize',10)
+ylabel('% Daily Presence','FontSize',12)
+title(['Detrended Timeseries: ', simpleFName],'FontSize',12)
 xlim([min(dateVec),max(dateVec)])
 
 %% Estimate seasonal component
@@ -153,11 +156,12 @@ else
     xlim([0.5,52.5])
 end
 ylabel('Seasonal adjustment','FontSize',12)
-title(['Estimated seasonal trend: ', simpleFName],'FontSize',10)
+title(['Estimated seasonal trend: ', simpleFName],'FontSize',12)
 if savePlots
     figName93 = fullfile(savePath,[outputFileName,'_seasonality']);
     saveas(93,figName93,'fig')
-    print(93,'-dpng','-r600',[figName93,'.png'])
+    saveas(figure(93),figName93,'tiff');
+%     print(93,'-dpng','-r600',[figName93,'.png'])
 end
 
 figure(930);clf
@@ -171,24 +175,25 @@ else
     xlim([0.5,52.5])
 end
 ylabel('Seasonal adjustment / deseasoned mean','FontSize',12)
-title(['Estimated seasonal trend: ', simpleFName],'FontSize',10)
+title(['Estimated seasonal trend: ', simpleFName],'FontSize',12)
 if savePlots
     figName930 = fullfile(savePath,[outputFileName,'_seasonality_norm']);
     saveas(930,figName930,'fig')
-    print(930,'-dpng','-r600',[figName93,'.png'])
+    saveas(figure(930),figName930,'tiff');
+%     print(930,'-dpng','-r600',[figName93,'.png'])
 end
 %% Plot seasonal component of timeseries
 figure(94);clf
 if monthlyBins
-    plot(monthStarts(goodRows),seasonalComponent,'.')
+    plot(monthStarts(goodRows),seasonalComponent,'o')
 else
-    plot(dateVec(goodRows),seasonalComponent,'.')
+    plot(dateVec(goodRows),seasonalComponent,'o')
 end
 set(gcf,'units','inches','PaperPositionMode','auto','OuterPosition',[4 2 10 5])
 datetick('x','mmm ''yy','keepLimits')
 xlabel('Date (month, year)','FontSize',12)
-ylabel('Mean','FontSize',12)
-title(['Seasonal component estimate: ',simpleFName], 'FontSize',10)
+ylabel('Mean Monthly Presence','FontSize',12)
+title(['Seasonal component estimate: ',simpleFName], 'FontSize',12)
 xlim([min(dateVec),max(dateVec)])
 
 %% Deseason orignal data and re-estimate slope
@@ -207,7 +212,7 @@ annualChange = deseasEstSlope*365;
 %% Plot deseasoned data and slope
 figure(95);clf
 if monthlyBins
-    plot(monthStarts(goodRows),deseasonMean,'.')
+    plot(monthStarts(goodRows),deseasonMean,'o')
 else
     plot(dateVec(goodRows),deseasonMean,'.')
 end
@@ -217,32 +222,37 @@ plot(dateVec,deseasTrend','-r')
 set(gcf,'units','inches','PaperPositionMode','auto','OuterPosition',[5 2 10 5])
 datetick('x','mmm ''yy','keepLimits')
 xlabel('Date (month, year)','FontSize',12)
-ylabel('Mean','FontSize',12)
+ylabel('Mean Monthly Presence','FontSize',12)
 title(sprintf('Deseasoned data and slope estimate: %s\n Estimated rate of change: %.3f/year',...
-    simpleFName,annualChange), 'FontSize',10)
+    simpleFName,annualChange), 'FontSize',12)
 legend({'Deseasoned Data', 'Trend 2: de-seasoned'})
 xlim([min(dateVec),max(dateVec)])
 if savePlots
     figName95 = fullfile(savePath,[outputFileName,'_deseasoned']);
     saveas(95,figName95,'fig')
-    print(95,'-dpng','-r600',[figName95,'.png'])
+    saveas(figure(95),figName95,'tiff');
+%     print(95,'-dpng','-r600',[figName95,'.png'])
 end
 %% Plot original data and slope
 figure(96);clf
 cvMax = max(nanmax(cvVec),0);
-bar(dateVec(isnan(meanVec)),cvMax+repY91(isnan(meanVec)),...
-    1,'FaceColor',[0.8,0.8,0.8],...
-    'EdgeColor',[0.8,0.8,0.8])
-hold on
 if ~isnan(nanmax(cvVec)) % have cvs
     hE = errorbar(dateVec, meanVec,cvVec,'ok');
     hE.CapSize = 0;
     yMax = nanmax(meanVec+cvVec)*1.1;
 else
     %no cvs
-    plot(dateVec,meanVec,'ok');
-    yMax = nanmax(meanVec)*1.1;
+    plot(dateVec,meanVec,'o');
+    if any(~isnan(meanVec)&(meanVec~=0))
+        yMax = nanmax(meanVec)*1.1;
+    else
+        yMax = 1
+    end
 end
+hold on
+bar(dateVec(isnan(meanVec)),cvMax+repY91(isnan(meanVec)),...
+    1,'FaceColor',[0.8,0.8,0.8],...
+    'EdgeColor',[0.8,0.8,0.8])
 xlim([min(dateVec),max(dateVec)])
 ylim([0,yMax])
 set(gca,'FontSize',12)
@@ -251,16 +261,18 @@ set(gcf,'units','inches','PaperPositionMode','auto','OuterPosition',[6 2 10 5])
 datetick('x','mmm ''yy','keepLimits')
 set(gca,'FontSize',12)
 xlabel('Date (month, year)','FontSize',14)
-ylabel('Mean','FontSize',14)
-legend({'Recording Gaps','Original Data', 'Trend 2: de-seasoned'})
+ylabel('% Daily Presence','FontSize',14)
+legend({'Original Data','Recording Gaps','Trend 2: de-seasoned'})
 title(sprintf('Original data and slope estimate: %s\n Estimated rate of change: %.2f%% per year',...
-    simpleFName,100*annualChange./nanmean(meanVec)),'FontSize',10)
+    simpleFName,100*annualChange./nanmean(meanVec)),'FontSize',12)
 xlim([min(dateVec),max(dateVec)])
 set(gca,'layer','top')
+hold off
 if savePlots
     figName96 = fullfile(savePath,[outputFileName,'_longTermTrend']);
     saveas(96,figName96,'fig')
-    print(96,'-dpng','-r600',[figName96,'.png'])
+    saveas(figure(96),figName96,'tiff');
+%     print(96,'-dpng','-r600',[figName96,'.png'])
 end
 confIntSlopeAnnual = confIntSlope*365;
 disp(outputFileName)
