@@ -83,9 +83,9 @@
 
 %% From corrected 5minBin Timeseries
 
-TSdir = 'I:\TimeSeries_ScaledByEffortError';
-lumDir = 'I:\IlluminationFiles'; % directory containing lunar illumination and night files
-outDir = 'I:\Diel Plots'; % directory to save plots
+TSdir = 'J:\Chpt_2\TimeSeries_ScaledByEffortError';
+lumDir = 'J:\Chpt_2\IlluminationFiles'; % directory containing lunar illumination and night files
+outDir = 'J:\Chpt_2\Diel Plots'; % directory to save plots
 goodIdx = [1,2,4,8,11,13:19];
 stDate = datenum('2016-05-01');
 endDate = datenum('2019-04-30 23:59:59');
@@ -102,7 +102,7 @@ HARPs = {[41.0618333 66.35158]; % WAT_HZ
     [32.1060333 77.09432]; % WAT_BP      
     [30.5837833 77.39072]; % WAT_BS       
     [30.1518333 79.77022]}; % JAX_D
-UTCOffset = 0;
+UTCOffset = -18;
 
 
 TSfiles = dir(fullfile(TSdir,'*_5minBin.csv'));
@@ -136,7 +136,7 @@ for i = goodIdx
         if any(presInd) % if there is any presence exceeding min clicks thresh
             
             % load lunar illumination & night data
-            lumMatch = reshape(strfind({lumFiles.name},sites(j)),size(lumFiles));
+            lumMatch = reshape(strfind({lumFiles.name},sites{j}),size(lumFiles));
             whichLum = cellfun(@(x) ~isempty(x),lumMatch);
             load(fullfile(lumDir,lumFiles(whichLum).name));
             
@@ -149,7 +149,7 @@ for i = goodIdx
             % deployments)
             effBins = datenum(table2array(effort(:,1)));
             effProp = table2array(effort(:,2));
-            [Lia Lib] = ismember(effBins,fullDateVec);
+            [Lia Lib] = ismembertol(effBins,fullDateVec,1e-9,'DataScale',1);
             effProp(Lia==0) = [];
             Lia(Lia==0)=[]; Lib(Lib==0)=[];
             fullEffVec = fullDateVec';
@@ -161,10 +161,11 @@ for i = goodIdx
             jumps = find(diff(offEff)~=1);
             EffortGaps = datenum(fullEffVec(offEff(1),1));
             for e = 1:size(jumps,1)
-                EffortGaps(e,2) = datenum(fullEffVec(offEff(jumps(e),1)));
-                EffortGaps(e+1,1) = datenum(fullEffVec(offEff(jumps(e)+1,1)));
+                EffortGaps(e,2) = fullEffVec(offEff(jumps(e),1));
+                EffortGaps(e+1,1) = fullEffVec(offEff(jumps(e)+1,1));
             end
-            EffortGaps(end,2) = datenum('01-01-2020');
+            EffortGaps(end,2) = fullEffVec(offEff(end));
+
             
             % get presence which exceeds min clicks threshold
             thisSite = datenum(thisCT.Bin(presInd));
